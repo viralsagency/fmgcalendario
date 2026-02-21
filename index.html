@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FMG — Calendario Studi</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:  #0d3b6e;
+  --blue:  #1a6eaa;
+  --blue2: #2980b9;
+  --sky:   #ebf4fc;
+  --skyb:  #c8e0f4;
+  --bord:  #d4e6f1;
+  --bg:    #f0f6fb;
+  --white: #ffffff;
+  --text:  #1c2d3f;
+  --muted: #6b8299;
+  --red:   #e74c3c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+
+/* ── LOADING SCREEN ── */
+.loading-screen {
+  position:fixed;inset:0;background:var(--navy);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;color:#fff;gap:16px;
+  transition:opacity .4s ease;
+}
+.loading-screen.fade-out{opacity:0;pointer-events:none;}
+.loading-screen.hidden{display:none;}
+.loading-logo{font-size:28px;font-weight:800;}
+.loading-logo span{color:#7ec8f0;}
+.spinner{
+  width:36px;height:36px;border:3px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:13px;opacity:.7;}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,#08213d 0%,var(--navy) 55%,#1a5c96 100%);
+  height:60px;padding:0 20px;
+  display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 16px rgba(0,0,0,.28);
+}
+.hdr-logo{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;white-space:nowrap;}
+.hdr-logo span{color:#7ec8f0;}
+.hdr-sep{width:1px;height:22px;background:rgba(255,255,255,.15);flex-shrink:0;}
+.hdr-nav{display:flex;align-items:center;gap:6px;}
+.hbtn{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:8px;color:#fff;font-family:'Inter',sans-serif;
+  font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;
+  transition:background .15s;white-space:nowrap;
+}
+.hbtn:hover{background:rgba(255,255,255,.22);}
+.hbtn.today{background:rgba(255,255,255,.18);}
+.wk-lbl{font-size:13px;font-weight:700;color:#fff;min-width:200px;text-align:center;}
+.hdr-sp{flex:1;}
+.sync-dot{
+  width:8px;height:8px;border-radius:50%;background:#34d399;
+  flex-shrink:0;transition:background .3s;
+}
+.sync-dot.syncing{background:#fbbf24;animation:pulse .8s infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ham{
+  display:none;width:40px;height:40px;border-radius:9px;
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:#fff;font-size:18px;cursor:pointer;
+  align-items:center;justify-content:center;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  position:relative;z-index:210;
+}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:216px 1fr;min-height:calc(100vh - 60px);}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--white);border-right:1px solid var(--bord);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-blk{padding:16px 14px;border-bottom:1px solid var(--bord);}
+.sb-blk:last-child{border-bottom:none;}
+.sb-ttl{font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.doc-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:9px;margin-bottom:2px;transition:background .12s;}
+.doc-row:hover{background:var(--sky);}
+.ddot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dinfo{flex:1;min-width:0;}
+.dname{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dspec{font-size:10px;color:var(--muted);margin-top:1px;}
+.dedit{width:26px;height:26px;flex-shrink:0;opacity:0;border:1px solid var(--bord);border-radius:6px;background:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:opacity .12s,background .12s;}
+.doc-row:hover .dedit{opacity:1;}
+.dedit:hover{background:var(--skyb);color:var(--blue);}
+.btn-add{width:100%;margin-top:8px;padding:9px 10px;border:1.5px dashed var(--bord);border-radius:9px;background:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.btn-add:hover{background:var(--sky);border-color:var(--blue);border-style:solid;}
+.room-row{display:flex;align-items:center;justify-content:space-between;padding:7px 8px;border-radius:9px;margin-bottom:2px;transition:background .12s;}
+.room-row:hover{background:var(--sky);}
+.rnum{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:1px;}
+.rnm{font-size:12px;font-weight:600;}
+.rrename{opacity:0;font-size:11px;color:var(--muted);border:1px solid var(--bord);border-radius:5px;background:none;padding:3px 7px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s;}
+.room-row:hover .rrename{opacity:1;}
+.rrename:hover{background:var(--skyb);color:var(--blue);border-color:var(--blue);}
+.time-row{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:9px;background:var(--sky);border:1px solid var(--bord);margin-bottom:6px;}
+.time-row:last-child{margin-bottom:0;}
+.tlbl{font-size:12px;color:var(--muted);}
+.tval{font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;border-bottom:1px dashed var(--blue);transition:color .12s;}
+.tval:hover{color:var(--blue);}
+
+/* ── CALENDAR ── */
+.cal-wrap{overflow:auto;padding:16px;}
+.legend{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.lsq{width:10px;height:10px;border-radius:3px;}
+.leg-hint{margin-left:auto;font-size:11px;color:var(--muted);font-style:italic;}
+.cal-grid{display:grid;grid-template-columns:96px repeat(6,1fr);min-width:680px;border-radius:14px;overflow:hidden;border:1px solid var(--bord);box-shadow:0 4px 24px rgba(13,59,110,.07);}
+.col-hd{background:var(--navy);color:#fff;padding:11px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.08);user-select:none;}
+.col-hd:last-child{border-right:none;}
+.col-hd.corner{background:#07192e;}
+.col-hd.today{background:var(--blue2);}
+.ch-s{font-size:9px;font-weight:700;letter-spacing:1.5px;opacity:.65;}
+.ch-n{font-size:16px;font-weight:800;margin-top:2px;}
+.ch-m{font-size:9px;opacity:.5;margin-top:1px;}
+.room-lbl{background:linear-gradient(180deg,var(--sky) 0%,#deedf8 100%);border-right:1px solid var(--bord);border-bottom:1px solid var(--bord);padding:10px;display:flex;flex-direction:column;justify-content:center;}
+.rln{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:2px;}
+.rlv{font-size:11px;font-weight:600;color:var(--navy);line-height:1.2;}
+.day-col{border-right:1px solid var(--bord);border-bottom:1px solid var(--bord);}
+.day-col:last-child{border-right:none;}
+.slot{height:52px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;gap:6px;position:relative;transition:filter .12s,background .12s;}
+.slot.am{border-bottom:1px dashed var(--bord);}
+.slot.empty{background:var(--white);}
+.slot.empty:hover{background:var(--sky);}
+.slot.empty:hover .ep{color:var(--blue);}
+.slot.empty:hover .et{color:var(--blue);opacity:.6;}
+.ep{font-size:20px;color:var(--bord);margin:auto;line-height:1;}
+.et{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--bord);}
+.slot.filled:hover{filter:brightness(.88);}
+.sbar{width:3px;height:30px;border-radius:2px;background:rgba(255,255,255,.35);flex-shrink:0;}
+.sinfo{flex:1;min-width:0;}
+.sdoc{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.stm{font-size:9px;color:rgba(255,255,255,.7);margin-top:2px;}
+.semo{font-size:12px;flex-shrink:0;}
+
+/* ── MODALS ── */
+.ov{position:fixed;inset:0;background:rgba(8,25,55,.52);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;animation:ovFade .15s ease;}
+.ov.hidden{display:none;}
+@keyframes ovFade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--white);border-radius:18px;padding:26px 24px;width:92%;max-width:410px;box-shadow:0 28px 80px rgba(8,25,55,.28);animation:mUp .2s cubic-bezier(.16,1,.3,1);}
+@keyframes mUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.modal h3{font-size:17px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+.msub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.ibox{background:var(--sky);border:1px solid var(--skyb);border-radius:10px;padding:10px 13px;margin-bottom:16px;font-size:13px;color:var(--navy);line-height:1.55;}
+.ibox strong{font-weight:700;}
+.rtag{display:inline-block;margin-top:5px;font-size:10px;font-weight:600;background:var(--blue);color:#fff;border-radius:4px;padding:2px 7px;}
+.fg{margin-bottom:13px;}
+.fg label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;}
+.fg select,.fg input[type=text],.fg input[type=color]{width:100%;padding:10px 12px;border:1.5px solid var(--bord);border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);outline:none;background:var(--white);transition:border-color .15s;}
+.fg select:focus,.fg input:focus{border-color:var(--blue);}
+.fg input[type=color]{height:40px;padding:4px 6px;cursor:pointer;}
+.chkrow{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;background:var(--sky);border:1.5px solid var(--bord);cursor:pointer;transition:border-color .15s;margin-bottom:13px;}
+.chkrow:hover{border-color:var(--blue);}
+.chkrow input{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;}
+.chklbl{font-size:12px;line-height:1.4;}
+.chklbl strong{color:var(--navy);}
+.mbtns{display:flex;gap:8px;margin-top:18px;}
+.mb{flex:1;padding:11px;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;}
+.mb-cancel{background:var(--bg);color:var(--muted);border:1.5px solid var(--bord);}
+.mb-cancel:hover{background:var(--bord);}
+.mb-confirm{background:var(--navy);color:#fff;}
+.mb-confirm:hover{background:var(--blue);}
+.mb-danger{background:#fef0f0;color:var(--red);border:1.5px solid #fcc;}
+.mb-danger:hover{background:#fcc;}
+.mb.hidden{display:none;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:3000;box-shadow:0 8px 28px rgba(13,59,110,.35);animation:tUp .2s cubic-bezier(.16,1,.3,1);}
+.toast.hidden{display:none;}
+@keyframes tUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── MOBILE ── */
+.mob-nav{display:none;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--white);border-bottom:1px solid var(--bord);position:sticky;top:60px;z-index:90;}
+.mnbtn{background:var(--sky);border:1px solid var(--bord);border-radius:8px;color:var(--navy);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;padding:7px 13px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.mob-wk{font-size:12px;font-weight:700;color:var(--navy);text-align:center;}
+.sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150;}
+.sb-ov.open{display:block;}
+.fab{display:none;position:fixed;bottom:20px;right:20px;width:54px;height:54px;border-radius:50%;background:var(--navy);color:#fff;font-size:24px;border:none;cursor:pointer;z-index:100;box-shadow:0 6px 20px rgba(13,59,110,.4);align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+
+@media(max-width:768px){
+  .hdr{padding:0 12px;gap:8px;height:56px;}
+  .hdr-logo{font-size:13px;}
+  .hdr-sep,.hdr-nav{display:none;}
+  .ham{display:flex;}
+  .mob-nav{display:flex;}
+  .layout{grid-template-columns:1fr;}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:270px;z-index:160;transform:translateX(-100%);transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:none;}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.18);}
+  .cal-wrap{padding:10px 8px;}
+  .leg-hint{display:none;}
+  .cal-grid{grid-template-columns:72px repeat(6,minmax(88px,1fr));}
+  .col-hd{padding:8px 4px;}
+  .ch-n{font-size:14px;}
+  .slot{height:58px;padding:5px 6px;}
+  .sdoc{font-size:10px;}
+  .stm{font-size:8px;}
+  .ov{align-items:flex-end;padding:0;}
+  .modal{width:100%;max-width:100%;border-radius:20px 20px 0 0;padding:22px 20px 32px;max-height:90vh;overflow-y:auto;}
+  .mb{padding:13px;font-size:14px;}
+  .fab{display:flex;}
+}
+@media(max-width:480px){
+  .cal-grid{grid-template-columns:60px repeat(6,minmax(74px,1fr));}
+  .ch-s{font-size:8px;letter-spacing:0;}
+  .ch-m{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loadScreen">
+  <div class="loading-logo">FMG <span>Calendario</span></div>
+  <div class="spinner"></div>
+  <div class="loading-txt">Connessione al database…</div>
+</div>
+
+<header class="hdr">
+  <button class="ham" id="hamBtn">☰</button>
+  <div class="hdr-logo">FMG <span>Calendario</span></div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-nav">
+    <button class="hbtn" onclick="changeWeek(-1)">← Prec.</button>
+    <div class="wk-lbl" id="wkLbl"></div>
+    <button class="hbtn" onclick="changeWeek(1)">Succ. →</button>
+    <button class="hbtn today" onclick="goToday()">Oggi</button>
+  </div>
+  <div class="hdr-sp"></div>
+  <div class="sync-dot" id="syncDot" title="Sincronizzato"></div>
+</header>
+
+<div class="mob-nav">
+  <button class="mnbtn" onclick="changeWeek(-1)">← Prec.</button>
+  <div class="mob-wk" id="wkLblM"></div>
+  <button class="mnbtn" onclick="changeWeek(1)">Succ. →</button>
+  <button class="mnbtn" onclick="goToday()">Oggi</button>
+</div>
+
+<div class="sb-ov" id="sbOv"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-blk">
+      <div class="sb-ttl">Dottori</div>
+      <div id="docList"></div>
+      <button class="btn-add" onclick="openDocModal(null)">
+        <span style="font-size:15px;line-height:1">+</span> Aggiungi dottore
+      </button>
+    </div>
+    <div class="sb-blk">
+      <div class="sb-ttl">Stanze</div>
+      <div id="roomList"></div>
+    </div>
+    <div class="sb-blk">
+      <div class="sb-ttl">Orari predefiniti</div>
+      <div class="time-row">
+        <div class="tlbl">☀️ Mattina</div>
+        <div class="tval" id="amLbl" onclick="openTimeModal('morning')"></div>
+      </div>
+      <div class="time-row">
+        <div class="tlbl">🌆 Pomeriggio</div>
+        <div class="tval" id="pmLbl" onclick="openTimeModal('afternoon')"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="cal-wrap">
+    <div class="legend">
+      <div class="leg"><div class="lsq" style="background:var(--skyb)"></div>Libero</div>
+      <div class="leg"><div class="lsq" style="background:var(--navy)"></div>Occupato</div>
+      <div class="leg">☀️ Mattina &nbsp;|&nbsp; 🌆 Pomeriggio</div>
+      <div class="leg-hint">Clicca su uno slot per assegnare, modificare o liberare</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<!-- Slot modal -->
+<div class="ov hidden" id="slotOv">
+  <div class="modal">
+    <h3 id="smTtl"></h3>
+    <div class="msub" id="smSub"></div>
+    <div class="ibox" id="smInfo"></div>
+    <div class="fg"><label>Dottore</label><select id="smDoc"></select></div>
+    <div class="fg"><label>Orario (personalizzabile per questo slot)</label><input type="text" id="smTime"></div>
+    <label class="chkrow">
+      <input type="checkbox" id="smRec">
+      <div class="chklbl">Applica ogni <strong id="smDay"></strong> (ricorrente)</div>
+    </label>
+    <div class="mbtns">
+      <button class="mb mb-cancel" onclick="closeOv('slotOv')">Annulla</button>
+      <button class="mb mb-danger hidden" id="smRm" onclick="removeSlot()">Rimuovi</button>
+      <button class="mb mb-confirm" onclick="saveSlot()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Doctor modal -->
+<div class="ov hidden" id="docOv">
+  <div class="modal">
+    <h3 id="dmTtl">Aggiungi Dottore</h3>
+    <div class="msub">Inserisci i dati del medico</div>
+    <div class="fg"><label>Nome completo</label><input type="text" id="dmName" placeholder="Es. Dr. Mario Rossi"></div>
+    <div class="fg"><label>Specialità (opzionale)</label><input type="text" id="dmSpec" placeholder="Es. Cardiologia"></div>
+    <div class="fg"><label>Colore identificativo</label><input type="color" id="dmCol"></div>
+    <div class="mbtns">
+      <button class="mb mb-cancel" onclick="closeOv('docOv')">Annulla</button>
+      <button class="mb mb-danger hidden" id="dmDel" onclick="deleteDoctor()">Elimina</button>
+      <button class="mb mb-confirm" onclick="saveDoctor()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Room modal -->
+<div class="ov hidden" id="roomOv">
+  <div class="modal">
+    <h3>Rinomina Stanza</h3>
+    <div class="msub" id="roSub"></div>
+    <div class="fg"><label>Nome stanza</label><input type="text" id="roName" placeholder="Es. Studio A"></div>
+    <div class="mbtns">
+      <button class="mb mb-cancel" onclick="closeOv('roomOv')">Annulla</button>
+      <button class="mb mb-confirm" onclick="saveRoom()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Time modal -->
+<div class="ov hidden" id="timeOv">
+  <div class="modal">
+    <h3 id="tmTtl">Modifica Orario</h3>
+    <div class="msub">Orario predefinito per questo slot. Modificabile anche singolarmente.</div>
+    <div class="fg"><label>Orario</label><input type="text" id="tmVal" placeholder="Es. 09:00 – 13:00"></div>
+    <div class="mbtns">
+      <button class="mb mb-cancel" onclick="closeOv('timeOv')">Annulla</button>
+      <button class="mb mb-confirm" onclick="saveTime()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn">☰</button>
+<div class="toast hidden" id="toast"></div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ═══════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════
+var firebaseConfig = {
+  apiKey: "AIzaSyC5asa9FoUJoEHsMlBuAVMPrKZcYndvTqo",
+  authDomain: "fmg-calendario.firebaseapp.com",
+  projectId: "fmg-calendario",
+  storageBucket: "fmg-calendario.firebasestorage.app",
+  messagingSenderId: "651278423847",
+  appId: "1:651278423847:web:e41cbcab3912bfdaac3b02"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+var DOC_REF = db.collection('calendario').doc('data');
+
+// ═══════════════════════════
+// CONSTANTS
+// ═══════════════════════════
+var DAYS  = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+var DSHRT = ['LUN','MAR','MER','GIO','VEN','SAB'];
+var MONS  = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+var COLS  = ['#0d3b6e','#1a6eaa','#16a085','#8e44ad','#c0392b','#e67e22','#27ae60','#d35400','#6c3483','#117a65'];
+
+// ═══════════════════════════
+// DATA
+// ═══════════════════════════
+function defData() {
+  return {
+    docs: [
+      {id:'d1',name:'Dr. Luigi Flagiello',spec:'Medicina Generale',color:'#0d3b6e'},
+      {id:'d2',name:'Dr. Luigi Nappa',spec:'',color:'#1a6eaa'}
+    ],
+    rooms: ['Stanza 1','Stanza 2','Stanza 3','Stanza 4'],
+    slotConfig: {morning:'09:00 – 13:00',afternoon:'14:00 – 18:00'},
+    recurring: {
+      '1_afternoon_0':{docId:'d1'},
+      '1_afternoon_1':{docId:'d2'}
+    },
+    overrides: {}
+  };
+}
+
+var data = defData();
+
+// ═══════════════════════════
+// FIREBASE SYNC
+// ═══════════════════════════
+function setSyncState(state) {
+  var dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+  dot.title = state === 'syncing' ? 'Salvataggio…' : state === 'error' ? 'Errore connessione' : 'Sincronizzato';
+}
+
+function loadFromFirebase(callback) {
+  DOC_REF.get().then(function(doc) {
+    if (doc.exists) {
+      var d = doc.data();
+      // Merge with defData to handle missing fields
+      data = Object.assign(defData(), d);
+    } else {
+      // First time: save defaults
+      data = defData();
+      DOC_REF.set(data);
+    }
+    callback();
+  }).catch(function(err) {
+    console.error('Firebase load error:', err);
+    setSyncState('error');
+    // Fall back to localStorage
+    try {var r=localStorage.getItem('fmg_c4');if(r)data=JSON.parse(r);} catch(e){}
+    callback();
+  });
+}
+
+var _saveTimer = null;
+function saveData() {
+  setSyncState('syncing');
+  // Also save to localStorage as backup
+  try {localStorage.setItem('fmg_c4', JSON.stringify(data));} catch(e){}
+  // Debounce Firebase writes by 600ms
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function() {
+    DOC_REF.set(data).then(function() {
+      setSyncState('ok');
+    }).catch(function(err) {
+      console.error('Firebase save error:', err);
+      setSyncState('error');
+      showToast('⚠️ Errore salvataggio cloud');
+    });
+  }, 600);
+}
+
+// Real-time listener — updates calendar if another device makes changes
+DOC_REF.onSnapshot(function(doc) {
+  if (doc.exists && doc.metadata.hasPendingWrites === false) {
+    var d = doc.data();
+    data = Object.assign(defData(), d);
+    render();
+    setSyncState('ok');
+  }
+}, function(err) {
+  console.error('Snapshot error:', err);
+});
+
+// ═══════════════════════════
+// DATE UTILS (local time)
+// ═══════════════════════════
+function localDs(d) {
+  var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+function parseLocal(ds) {
+  var p=ds.split('-'); return new Date(+p[0],+p[1]-1,+p[2]);
+}
+function dowOf(ds) {
+  return (parseLocal(ds).getDay()+6)%7;
+}
+
+// ═══════════════════════════
+// WEEK NAV
+// ═══════════════════════════
+function getMonday(d) {
+  var dt=new Date(d); dt.setHours(0,0,0,0);
+  var day=dt.getDay(); dt.setDate(dt.getDate()+(day===0?-6:1-day)); return dt;
+}
+var curMon = getMonday(new Date());
+function changeWeek(n) {curMon.setDate(curMon.getDate()+n*7);render();}
+function goToday()    {curMon=getMonday(new Date());render();}
+function weekDates()  {
+  return Array.from({length:6},function(_,i){var d=new Date(curMon);d.setDate(d.getDate()+i);return d;});
+}
+
+// ═══════════════════════════
+// ASSIGNMENT
+// ═══════════════════════════
+function getAssign(ds,ri,slot) {
+  var ok=ds+'_'+ri+'_'+slot;
+  if (data.overrides.hasOwnProperty(ok)) return data.overrides[ok];
+  var rk=dowOf(ds)+'_'+slot+'_'+ri;
+  return data.recurring[rk]||null;
+}
+function getSlotTime(ds,ri,slot) {
+  var a=getAssign(ds,ri,slot);
+  return (a&&a.customTime)?a.customTime:data.slotConfig[slot];
+}
+function getDoc(id) {return data.docs.find(function(d){return d.id===id;})||null;}
+
+// ═══════════════════════════
+// RENDER
+// ═══════════════════════════
+function render() {
+  var dates=weekDates();
+  var todayDs=localDs(new Date());
+
+  var s=dates[0].toLocaleDateString('it-IT',{day:'numeric',month:'long'});
+  var e=dates[5].toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+  var lbl=s+' – '+e;
+  document.getElementById('wkLbl').textContent=lbl;
+  document.getElementById('wkLblM').textContent=lbl;
+
+  // Docs
+  var dl=document.getElementById('docList'); dl.innerHTML='';
+  data.docs.forEach(function(doc){
+    var r=document.createElement('div'); r.className='doc-row';
+    r.innerHTML='<div class="ddot" style="background:'+doc.color+'"></div>'+
+      '<div class="dinfo"><div class="dname">'+doc.name+'</div>'+
+      (doc.spec?'<div class="dspec">'+doc.spec+'</div>':'')+
+      '</div><button class="dedit" onclick="openDocModal(\''+doc.id+'\')" title="Modifica">✏️</button>';
+    dl.appendChild(r);
+  });
+
+  // Rooms
+  var rl=document.getElementById('roomList'); rl.innerHTML='';
+  data.rooms.forEach(function(nm,i){
+    var r=document.createElement('div'); r.className='room-row';
+    r.innerHTML='<div><div class="rnum">Stanza '+(i+1)+'</div><div class="rnm">'+nm+'</div></div>'+
+      '<button class="rrename" onclick="openRoomModal('+i+')">✏️ Rinomina</button>';
+    rl.appendChild(r);
+  });
+
+  document.getElementById('amLbl').textContent=data.slotConfig.morning;
+  document.getElementById('pmLbl').textContent=data.slotConfig.afternoon;
+
+  // Grid
+  var grid=document.getElementById('calGrid'); grid.innerHTML='';
+  var corner=mk('div','col-hd corner');
+  corner.innerHTML='<div class="ch-s" style="opacity:.35">STANZA</div>';
+  grid.appendChild(corner);
+
+  dates.forEach(function(d,i){
+    var ds=localDs(d);
+    var h=mk('div','col-hd'+(ds===todayDs?' today':''));
+    h.innerHTML='<div class="ch-s">'+DSHRT[i]+'</div><div class="ch-n">'+d.getDate()+'</div><div class="ch-m">'+MONS[d.getMonth()]+'</div>';
+    grid.appendChild(h);
+  });
+
+  data.rooms.forEach(function(nm,ri){
+    var lbl=mk('div','room-lbl');
+    lbl.innerHTML='<div class="rln">Stanza '+(ri+1)+'</div><div class="rlv">'+nm+'</div>';
+    grid.appendChild(lbl);
+
+    dates.forEach(function(d){
+      var ds=localDs(d);
+      var col=mk('div','day-col');
+      ['morning','afternoon'].forEach(function(slot){
+        var assign=getAssign(ds,ri,slot);
+        var docId=assign?assign.docId:null;
+        var doc=docId?getDoc(docId):null;
+        var time=getSlotTime(ds,ri,slot);
+        var emoji=slot==='morning'?'☀️':'🌆';
+        var s=mk('div','slot '+(slot==='morning'?'am':'pm')+' '+(doc?'filled':'empty'));
+        if(doc){
+          s.style.background=doc.color;
+          s.innerHTML='<div class="sbar"></div><div class="sinfo"><div class="sdoc">'+doc.name+'</div><div class="stm">'+time+'</div></div><div class="semo">'+emoji+'</div>';
+        } else {
+          s.innerHTML='<div class="ep">+</div><div class="et">'+emoji+'</div>';
+        }
+        (function(capDs,capRi,capSlot){s.onclick=function(){openSlotModal(capDs,capRi,capSlot);};})(ds,ri,slot);
+        col.appendChild(s);
+      });
+      grid.appendChild(col);
+    });
+  });
+}
+
+function mk(tag,cls){var e=document.createElement(tag);e.className=cls;return e;}
+
+// ═══════════════════════════
+// SLOT MODAL
+// ═══════════════════════════
+var _sc=null;
+function openSlotModal(ds,ri,slot){
+  _sc={ds:ds,ri:ri,slot:slot};
+  var assign=getAssign(ds,ri,slot);
+  var docId=assign?assign.docId:null;
+  var time=getSlotTime(ds,ri,slot);
+  var dayIdx=dowOf(ds);
+  var rk=dayIdx+'_'+slot+'_'+ri;
+  var isRecur=data.recurring.hasOwnProperty(rk);
+  var isOver=data.overrides.hasOwnProperty(ds+'_'+ri+'_'+slot);
+  var emoji=slot==='morning'?'☀️':'🌆';
+  var slotNm=slot==='morning'?'Mattina':'Pomeriggio';
+  var dateFmt=parseLocal(ds).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+
+  document.getElementById('smTtl').textContent=docId?'Modifica Slot':'Assegna Slot';
+  document.getElementById('smSub').textContent=data.rooms[ri]+' — '+emoji+' '+slotNm;
+  document.getElementById('smInfo').innerHTML='<strong>'+dateFmt+'</strong><br>'+data.rooms[ri]+' — '+emoji+' '+slotNm+
+    (isRecur&&!isOver?'<br><span class="rtag">📅 Ricorrente settimanale</span>':'');
+
+  var sel=document.getElementById('smDoc');
+  sel.innerHTML='<option value="">— Slot libero —</option>'+
+    data.docs.map(function(d){return '<option value="'+d.id+'"'+(d.id===docId?' selected':'')+'>'+d.name+(d.spec?' ('+d.spec+')':'')+'</option>';}).join('');
+
+  document.getElementById('smTime').value=time;
+  document.getElementById('smDay').textContent=DAYS[dayIdx];
+  document.getElementById('smRec').checked=isRecur&&!isOver;
+  document.getElementById('smRm').classList.toggle('hidden',!docId);
+  document.getElementById('slotOv').classList.remove('hidden');
+}
+
+function saveSlot(){
+  var ds=_sc.ds,ri=_sc.ri,slot=_sc.slot;
+  var docId=document.getElementById('smDoc').value||null;
+  var time=document.getElementById('smTime').value.trim();
+  var recur=document.getElementById('smRec').checked;
+  var dayIdx=dowOf(ds);
+  var rk=dayIdx+'_'+slot+'_'+ri;
+  var ok=ds+'_'+ri+'_'+slot;
+  var custom=(time!==data.slotConfig[slot])?time:undefined;
+  var val=docId?Object.assign({docId:docId},custom?{customTime:custom}:{}):null;
+
+  if(recur){
+    if(docId) data.recurring[rk]=Object.assign({docId:docId},custom?{customTime:custom}:{});
+    else delete data.recurring[rk];
+    Object.keys(data.overrides).forEach(function(k){
+      var p=k.split('_');var kds=p[0],kri=p[1],kslot=p[2];
+      if(kri===String(ri)&&kslot===slot&&dowOf(kds)===dayIdx&&parseLocal(kds)>=parseLocal(ds))
+        delete data.overrides[k];
+    });
+  } else {
+    data.overrides[ok]=val;
+  }
+  saveData(); closeOv('slotOv'); render();
+  showToast(docId?'✓ Slot assegnato':'✓ Slot liberato');
+}
+
+function removeSlot(){
+  data.overrides[_sc.ds+'_'+_sc.ri+'_'+_sc.slot]=null;
+  saveData(); closeOv('slotOv'); render(); showToast('✓ Slot rimosso');
+}
+
+// ═══════════════════════════
+// DOCTOR MODAL
+// ═══════════════════════════
+var _editDoc=null;
+function openDocModal(id){
+  _editDoc=id;
+  var doc=id?getDoc(id):null;
+  document.getElementById('dmTtl').textContent=doc?'Modifica Dottore':'Aggiungi Dottore';
+  document.getElementById('dmName').value=doc?doc.name:'';
+  document.getElementById('dmSpec').value=doc?doc.spec:'';
+  document.getElementById('dmCol').value=doc?doc.color:COLS[data.docs.length%COLS.length];
+  document.getElementById('dmDel').classList.toggle('hidden',!doc);
+  document.getElementById('docOv').classList.remove('hidden');
+  setTimeout(function(){document.getElementById('dmName').focus();},60);
+}
+function saveDoctor(){
+  var name=document.getElementById('dmName').value.trim();
+  if(!name){alert('Inserisci il nome');return;}
+  var spec=document.getElementById('dmSpec').value.trim();
+  var color=document.getElementById('dmCol').value;
+  if(_editDoc){var d=getDoc(_editDoc);d.name=name;d.spec=spec;d.color=color;}
+  else data.docs.push({id:'d'+Date.now(),name:name,spec:spec,color:color});
+  saveData(); closeOv('docOv'); render(); showToast('✓ Dottore salvato');
+}
+function deleteDoctor(){
+  if(!confirm('Eliminare il dottore?'))return;
+  Object.keys(data.recurring).forEach(function(k){if(data.recurring[k]&&data.recurring[k].docId===_editDoc)delete data.recurring[k];});
+  Object.keys(data.overrides).forEach(function(k){if(data.overrides[k]&&data.overrides[k].docId===_editDoc)delete data.overrides[k];});
+  data.docs=data.docs.filter(function(d){return d.id!==_editDoc;});
+  saveData(); closeOv('docOv'); render(); showToast('✓ Dottore eliminato');
+}
+
+// ═══════════════════════════
+// ROOM MODAL
+// ═══════════════════════════
+var _editRoom=null;
+function openRoomModal(i){
+  _editRoom=i;
+  document.getElementById('roSub').textContent='Stanza '+(i+1);
+  document.getElementById('roName').value=data.rooms[i];
+  document.getElementById('roomOv').classList.remove('hidden');
+  setTimeout(function(){document.getElementById('roName').focus();},60);
+}
+function saveRoom(){
+  var n=document.getElementById('roName').value.trim();
+  if(!n)return;
+  data.rooms[_editRoom]=n; saveData(); closeOv('roomOv'); render(); showToast('✓ Stanza rinominata');
+}
+
+// ═══════════════════════════
+// TIME MODAL
+// ═══════════════════════════
+var _editSlot=null;
+function openTimeModal(slot){
+  _editSlot=slot;
+  document.getElementById('tmTtl').textContent='Orario '+(slot==='morning'?'Mattina ☀️':'Pomeriggio 🌆');
+  document.getElementById('tmVal').value=data.slotConfig[slot];
+  document.getElementById('timeOv').classList.remove('hidden');
+  setTimeout(function(){document.getElementById('tmVal').focus();},60);
+}
+function saveTime(){
+  var v=document.getElementById('tmVal').value.trim();
+  if(!v)return;
+  data.slotConfig[_editSlot]=v; saveData(); closeOv('timeOv'); render(); showToast('✓ Orario aggiornato');
+}
+
+// ═══════════════════════════
+// UTILS
+// ═══════════════════════════
+function closeOv(id){document.getElementById(id).classList.add('hidden');}
+document.querySelectorAll('.ov').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o)o.classList.add('hidden');});
+});
+var _tt;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.remove('hidden');
+  clearTimeout(_tt);_tt=setTimeout(function(){t.classList.add('hidden');},2400);
+}
+
+// ═══════════════════════════
+// SIDEBAR MOBILE
+// ═══════════════════════════
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sbOv').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOv').classList.remove('open');
+}
+var hamBtn=document.getElementById('hamBtn');
+hamBtn.addEventListener('click',openSidebar);
+hamBtn.addEventListener('touchend',function(e){e.preventDefault();openSidebar();},{passive:false});
+var fabBtn=document.getElementById('fabBtn');
+fabBtn.addEventListener('click',openSidebar);
+fabBtn.addEventListener('touchend',function(e){e.preventDefault();openSidebar();},{passive:false});
+document.getElementById('sbOv').addEventListener('click',closeSidebar);
+document.getElementById('sbOv').addEventListener('touchend',function(e){e.preventDefault();closeSidebar();},{passive:false});
+
+// ═══════════════════════════
+// INIT — load from Firebase then render
+// ═══════════════════════════
+loadFromFirebase(function() {
+  render();
+  var ls = document.getElementById('loadScreen');
+  ls.classList.add('fade-out');
+  setTimeout(function(){ls.classList.add('hidden');}, 400);
+});
+</script>
+</body>
+</html>
