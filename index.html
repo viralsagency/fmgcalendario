@@ -543,8 +543,9 @@ function weekDates()  {
 function getAssign(ds,ri,slot) {
   var ok=ds+'_'+ri+'_'+slot;
   if (data.overrides.hasOwnProperty(ok)) return data.overrides[ok];
-  // Recurring applica solo da oggi in poi
-  if(ds < localDs(new Date())) return null;
+  // Ricorrente applica solo da oggi in poi (oggi incluso)
+  var todayDs=localDs(new Date());
+  if(ds < todayDs) return null;
   var rk=dowOf(ds)+'_'+slot+'_'+ri;
   return data.recurring[rk]||null;
 }
@@ -692,8 +693,10 @@ function saveSlot(){
     // Imposta ricorrente
     if(docId) data.recurring[rk]=Object.assign({docId:docId},custom?{customTime:custom}:{});
     else delete data.recurring[rk];
-    // Rimuovi override futuri che potrebbero sovrascrivere il ricorrente
+    // Rimuovi override futuri (incluso quello della data cliccata stessa)
     clearFutureOverrides();
+    // Assicura che lo slot della data cliccata non abbia un override che blocchi il ricorrente
+    delete data.overrides[ok];
   } else {
     // Se c'era un ricorrente attivo, rimuovilo completamente + tutti gli override futuri
     if(wasRecur){
