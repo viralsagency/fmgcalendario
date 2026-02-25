@@ -223,8 +223,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
   /* Calendario scrollabile orizzontalmente */
   .cal-wrap{padding:8px 0 8px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .cal-grid{
-    grid-template-columns:68px repeat(6,minmax(82px,1fr));
-    min-width:auto;border-radius:10px;
+    grid-template-columns:58px repeat(6,minmax(58px,1fr));
+    min-width:416px;
+    border-radius:10px;
   }
   .col-hd{padding:8px 3px;}
   .ch-n{font-size:13px;}
@@ -259,7 +260,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
   .toast{bottom:16px;right:12px;left:12px;text-align:center;font-size:12px;}
 }
 @media(max-width:480px){
-  .cal-grid{grid-template-columns:58px repeat(6,minmax(70px,1fr));}
+  .cal-grid{grid-template-columns:52px repeat(6,minmax(52px,1fr));min-width:364px;}
   .ch-s{font-size:7px;letter-spacing:0;}
   .ch-m{display:none;}
   .slot{height:52px;}
