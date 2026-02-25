@@ -694,10 +694,11 @@ function saveSlot(){
     // Imposta ricorrente
     if(docId) data.recurring[rk]=Object.assign({docId:docId},custom?{customTime:custom}:{});
     else delete data.recurring[rk];
-    // Rimuovi override futuri (incluso quello della data cliccata stessa)
+    // Rimuovi override futuri che potrebbero sovrascrivere il ricorrente
     clearFutureOverrides();
-    // Assicura che lo slot della data cliccata non abbia un override che blocchi il ricorrente
-    delete data.overrides[ok];
+    // Imposta override esplicito per la data cliccata (garantisce che appaia subito)
+    if(docId) data.overrides[ok]=Object.assign({docId:docId},custom?{customTime:custom}:{});
+    else delete data.overrides[ok];
   } else {
     // Se c'era un ricorrente attivo, rimuovilo completamente + tutti gli override futuri
     if(wasRecur){
